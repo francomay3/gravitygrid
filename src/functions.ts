@@ -27,7 +27,7 @@ export const createRandomParticle = (
   const vy = ((Math.random() * (v2 - v1) + v1) * likelyToBeSmall(2)) / m;
   const r = getRadius(m, density);
 
-  return { x, y, m, vx, vy, r };
+  return { x, y, m, vx, vy, r, ax: 0, ay: 0, dead: false };
 };
 
 export const getInitialConditions: (parameters: Parameters) => Particle[] = (
@@ -47,19 +47,26 @@ export const getInitialConditions: (parameters: Parameters) => Particle[] = (
 export const interactParticle = (
   a: Particle,
   b: Particle,
-  parameters: Parameters,
-  particles: Particle[]
+  parameters: Parameters
 ) => {
-  if (a === b) {
+  if (a === b || a.dead || b.dead) {
     return;
   }
   const { gravitationalConstant, density } = parameters;
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
+  const bIsComparativelySmall = b.m * 10 < a.m;
+  const bothAreSmallAndFarAway =
+    (Math.abs(dx) > 100 || Math.abs(dy) > 100) && b.m + a.m < 10;
+  if (bothAreSmallAndFarAway || bIsComparativelySmall) {
+    return;
+  }
 
-  const proportional = (prop: keyof Particle) =>
-    (a[prop] * a.m + b[prop] * b.m) / (a.m + b.m);
+  const proportional = (prop: keyof Particle) => {
+    if (prop === "dead") return 0;
+    return (a[prop] * a.m + b[prop] * b.m) / (a.m + b.m);
+  };
 
   if (distance < a.r + b.r) {
     a.vx = proportional("vx");
@@ -68,7 +75,7 @@ export const interactParticle = (
     a.y = proportional("y");
     a.m += b.m;
     a.r = getRadius(a.m, density);
-    particles.splice(particles.indexOf(b), 1);
+    b.dead = true;
     return;
   }
 
@@ -76,19 +83,31 @@ export const interactParticle = (
   const angle = Math.atan2(dy, dx);
   const fx = force * Math.cos(angle);
   const fy = force * Math.sin(angle);
-  a.vx += fx / a.m;
-  a.vy += fy / a.m;
+  const ax = fx / a.m;
+  const ay = fy / a.m;
+  a.ax += ax;
+  a.ay += ay;
+  a.vx += ax;
+  a.vy += ay;
   a.x += a.vx;
   a.y += a.vy;
 };
 
 export const getNextState = (state: State, parameters: Parameters) => {
-  state.forEach((a) => {
-    state.forEach((b) => {
-      interactParticle(a, b, parameters, state);
+  const nextState: State = structuredClone(state).flatMap((p: Particle) => {
+    if (p.dead) {
+      return [];
+    }
+    p.ax = 0;
+    p.ay = 0;
+    return p;
+  });
+  nextState.forEach((a) => {
+    nextState.forEach((b) => {
+      interactParticle(a, b, parameters);
     });
   });
-  return [...state];
+  return nextState;
 };
 
 export const useEvolveState = (parameters: Parameters) => {

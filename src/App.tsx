@@ -6,7 +6,7 @@ function App() {
     numberOfParticles: 500,
     massDistribution: [1, 50],
     velocityDistribution: [-0.005, 0.005],
-    gravitationalConstant: 0.001,
+    gravitationalConstant: 0.01,
     density: 1,
   };
 

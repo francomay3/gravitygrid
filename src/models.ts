@@ -5,6 +5,9 @@ export type Particle = {
   vx: number;
   vy: number;
   r: number;
+  ax: number;
+  ay: number;
+  dead: boolean;
 };
 
 export type State = Particle[];

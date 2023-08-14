@@ -12,8 +12,17 @@ const draw = (ctx: CanvasRenderingContext2D, state: State, density: number) => {
     const radius = getRadius(particle.m, density);
     ctx.beginPath();
     ctx.arc(particle.x, particle.y, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = "black";
-    ctx.fill();
+    ctx.strokeStyle = "black";
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(particle.x, particle.y);
+    ctx.lineTo(
+      particle.x + particle.ax * 100000,
+      particle.y + particle.ay * 100000
+    );
+    ctx.strokeStyle = "red";
+    ctx.stroke();
   });
 };
 
