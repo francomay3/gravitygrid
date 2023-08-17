@@ -12,12 +12,13 @@ export type Particle = {
 
 export type State = Particle[];
 
-export type Distribution = number[];
-
 export type Parameters = {
   gravitationalConstant: number;
   density: number;
   numberOfParticles: number;
-  massDistribution: Distribution;
-  velocityDistribution: Distribution;
+  massDistribution: number;
+  velocityDistribution: number;
+  gridResolution: number;
 };
+
+export type Grid = Particle[];
