@@ -5,8 +5,8 @@ export type Particle = {
   vx: number;
   vy: number;
   r: number;
-  ax: number;
-  ay: number;
+  fx: number;
+  fy: number;
   dead: boolean;
 };
 

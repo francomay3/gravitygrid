@@ -51,10 +51,12 @@ const draw = (
   };
 
   grid.forEach((gridCell) => {
+    const multiplier = 500000;
+
     drawVector({
       center: { x: gridCell.x, y: gridCell.y },
-      magnitude: { x: -gridCell.ax, y: -gridCell.ay },
-      multiplier: 5000000,
+      magnitude: { x: -gridCell.fx, y: -gridCell.fy },
+      multiplier,
       color: "red",
     });
 
@@ -76,10 +78,13 @@ const draw = (
       color: "black",
     });
 
+    const magnitudeX = particle.fx / particle.m;
+    const magnitudeY = particle.fy / particle.m;
+
     drawVector({
       center: { x: particle.x, y: particle.y },
-      magnitude: { x: particle.ax, y: particle.ay },
-      multiplier: 100000,
+      magnitude: { x: magnitudeX, y: magnitudeY },
+      multiplier: 10000,
       color: "blue",
     });
   });

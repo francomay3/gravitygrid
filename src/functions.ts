@@ -31,8 +31,10 @@ export const createRandomParticle = (
   const vx = (Math.random() * (v2 - v1) + v1) * likelyToBeSmall(2);
   const vy = (Math.random() * (v2 - v1) + v1) * likelyToBeSmall(2);
   const r = getRadius(m, density);
+  const fx = 0;
+  const fy = 0;
 
-  return { x, y, m, vx, vy, r, ax: 0, ay: 0, dead: false };
+  return { x, y, m, vx, vy, fx, fy, r, dead: false };
 };
 
 export const getInitialConditions: (parameters: Parameters) => Particle[] = (
@@ -54,12 +56,8 @@ const proportional = (a: Particle, b: Particle, prop: keyof Particle) => {
   return (a[prop] * a.m + b[prop] * b.m) / (a.m + b.m);
 };
 
-export const getAcceleration = (
-  a: Particle,
-  b: Particle,
-  parameters: Parameters
-) => {
-  const defaultResult = { ax: 0, ay: 0, collision: false, distance: 0 };
+export const getForce = (a: Particle, b: Particle, parameters: Parameters) => {
+  const defaultResult = { fx: 0, fy: 0, collision: false, distance: 0 };
   if (a === b || a.dead || b.dead) {
     return defaultResult;
   }
@@ -74,10 +72,10 @@ export const getAcceleration = (
   const angle = Math.atan2(dy, dx);
   const fx = force * Math.cos(angle);
   const fy = force * Math.sin(angle);
-  const ax = fx / a.m;
-  const ay = fy / a.m;
+  // const ax = fx / a.m;
+  // const ay = fy / a.m;
 
-  return { ax, ay, collision, distance };
+  return { fx, fy, collision, distance };
 };
 
 export const createBlankGrid = (gridResolution: number) => {
@@ -87,11 +85,11 @@ export const createBlankGrid = (gridResolution: number) => {
     Array.from({ length: gridResolution }, (_, i) => ({
       x: getPos(i),
       y: getPos(j),
-      ax: 0,
-      ay: 0,
       m: 1,
       vx: 0,
       vy: 0,
+      fx: 0,
+      fy: 0,
       r: 1,
       dead: false,
     }));
@@ -108,10 +106,10 @@ export const getNextGrid = (state: State, parameters: Parameters) => {
   const { grid: nextGrid, cellSize } = createBlankGrid(gridResolution);
   nextGrid.forEach((cell) => {
     state.forEach((p) => {
-      const { ax, ay, distance } = getAcceleration(p, cell, parameters);
+      const { fx, fy, distance } = getForce(p, cell, parameters);
       if (distance > cellSize) {
-        cell.ax += ax;
-        cell.ay += ay;
+        cell.fx += fx;
+        cell.fy += fy;
       }
     });
   });
@@ -124,13 +122,17 @@ export const getNextState = (state: State, parameters: Parameters) => {
     if (p.dead) {
       return [];
     }
-    p.ax = 0;
-    p.ay = 0;
+    const ax = p.fx / p.m;
+    const ay = p.fy / p.m;
+    p.vx += ax;
+    p.vy += ay;
+    p.fx = 0;
+    p.fy = 0;
     return p;
   });
   nextState.forEach((a) => {
     nextState.forEach((b) => {
-      const { ax, ay, collision } = getAcceleration(a, b, parameters);
+      const { fx, fy, collision } = getForce(a, b, parameters);
 
       if (collision) {
         a.vx = proportional(a, b, "vx");
@@ -142,12 +144,10 @@ export const getNextState = (state: State, parameters: Parameters) => {
         b.dead = true;
         return;
       }
-      a.ax += ax;
-      a.ay += ay;
-      a.vx += ax;
-      a.vy += ay;
       a.x += a.vx;
       a.y += a.vy;
+      a.fx += fx;
+      a.fy += fy;
     });
   });
   return nextState;
