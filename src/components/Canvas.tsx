@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
 import { getGridCellSize, getRadius } from "../functions";
 import { State, Grid, Parameters } from "../models";
-
 interface CanvasProps {
   state: State;
   parameters: Parameters;
   grid: Grid;
+  setScroll: (scroll: { x: number; y: number }) => void;
 }
 
 const draw = (
@@ -14,6 +14,7 @@ const draw = (
   { gridResolution, density }: Parameters,
   grid: Grid
 ) => {
+  ctx.clearRect(0, 0, 1000, 1000);
   const drawVector = ({
     center,
     color = "black",
@@ -25,6 +26,12 @@ const draw = (
     magnitude: { x: number; y: number };
     multiplier: number;
   }) => {
+    const maxMagnitude = 30;
+    const length = Math.sqrt(magnitude.x ** 2 + magnitude.y ** 2) * multiplier;
+    if (length > maxMagnitude) {
+      magnitude.x = (magnitude.x / length) * maxMagnitude;
+      magnitude.y = (magnitude.y / length) * maxMagnitude;
+    }
     ctx.beginPath();
     ctx.moveTo(center.x, center.y);
     ctx.lineTo(
@@ -51,7 +58,7 @@ const draw = (
   };
 
   grid.forEach((gridCell) => {
-    const multiplier = 500000;
+    const multiplier = 10000;
 
     drawVector({
       center: { x: gridCell.x, y: gridCell.y },
@@ -90,7 +97,7 @@ const draw = (
   });
 };
 
-const Canvas = ({ state, parameters, grid }: CanvasProps) => {
+const Canvas = ({ state, parameters, grid, setScroll }: CanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -99,6 +106,23 @@ const Canvas = ({ state, parameters, grid }: CanvasProps) => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     draw(ctx, state, parameters, grid);
   }, [state]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+
+    const handleScroll = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = canvas?.getBoundingClientRect();
+      if (!rect) return;
+      const deltaY = -e.deltaY;
+      const deltaX = -e.deltaX;
+      setScroll({ x: deltaX, y: deltaY });
+    };
+    canvas?.addEventListener("wheel", handleScroll);
+    return () => {
+      canvas?.removeEventListener("wheel", handleScroll);
+    };
+  }, []);
 
   return (
     <canvas

@@ -22,3 +22,18 @@ export type Parameters = {
 };
 
 export type Grid = Particle[];
+
+export type GetForce = (
+  a: Particle,
+  b: Particle,
+  distance: number,
+  parameters: Parameters
+) => { fx: number; fy: number };
+
+export type GetDistance = (a: Particle, b: Particle) => number;
+
+export type Proportional = (
+  a: Particle,
+  b: Particle,
+  prop: keyof Particle
+) => number;

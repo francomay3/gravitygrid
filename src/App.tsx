@@ -25,15 +25,15 @@ const Input = ({
 
 function App() {
   const [density, setDensity] = useState(10);
-  const [gravitationalConstant, setGravitationalConstant] = useState(1);
+  const [gravitationalConstant, setGravitationalConstant] = useState(1500);
+  const [massDistribution, setMassDistribution] = useState(200);
+  const [numberOfParticles, setNumberOfParticles] = useState(50);
+  const [velocityDistribution, setVelocityDistribution] = useState(20);
   const [gridResolution, setGridResolution] = useState(30);
-  const [massDistribution, setMassDistribution] = useState(50);
-  const [numberOfParticles, setNumberOfParticles] = useState(500);
-  const [velocityDistribution, setVelocityDistribution] = useState(5);
 
   const parameters = {
     density: density / 10,
-    gravitationalConstant: gravitationalConstant / 1000,
+    gravitationalConstant: gravitationalConstant / 100000,
     gridResolution,
     massDistribution: massDistribution / 0.1,
     numberOfParticles,
@@ -47,6 +47,7 @@ function App() {
     paused,
     reset,
     resume,
+    setScroll,
     showGrid,
     state,
     stop,
@@ -87,7 +88,12 @@ function App() {
         setter={setGridResolution}
         label="Grid Resolution"
       />
-      <Canvas state={state} parameters={parameters} grid={grid} />
+      <Canvas
+        state={state}
+        parameters={parameters}
+        grid={grid}
+        setScroll={setScroll}
+      />
     </>
   );
 }

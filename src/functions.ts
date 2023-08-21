@@ -1,5 +1,19 @@
-import { Particle, State, Parameters, Grid } from "./models";
+import {
+  Particle,
+  State,
+  Parameters,
+  Grid,
+  GetForce,
+  GetDistance,
+  Proportional,
+} from "./models";
 import { useState, useEffect } from "react";
+
+const scroll = { x: 0, y: 0 };
+const setScroll = ({ x, y }: { x: number; y: number }) => {
+  scroll.x = x;
+  scroll.y = y;
+};
 
 export const getRadius = (m: number, density: number) =>
   Math.pow(m / density, 1 / 3);
@@ -51,31 +65,27 @@ export const getInitialConditions: (parameters: Parameters) => Particle[] = (
   return particles;
 };
 
-const proportional = (a: Particle, b: Particle, prop: keyof Particle) => {
+const proportional: Proportional = (a, b, prop) => {
   if (prop === "dead") return 0;
   return (a[prop] * a.m + b[prop] * b.m) / (a.m + b.m);
 };
 
-export const getForce = (a: Particle, b: Particle, parameters: Parameters) => {
-  const defaultResult = { fx: 0, fy: 0, collision: false, distance: 0 };
-  if (a === b || a.dead || b.dead) {
-    return defaultResult;
-  }
+export const getDistance: GetDistance = (a, b) => {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  return Math.sqrt(dx * dx + dy * dy);
+};
+
+export const getForce: GetForce = (a, b, distance, parameters) => {
   const { gravitationalConstant } = parameters;
   const dx = b.x - a.x;
   const dy = b.y - a.y;
-  // const force =
-  //   (-2 * g * a.m * b.m * (dx + dy)) / Math.pow(dx * dx + dy * dy, 2);
-  const distance = Math.sqrt(dx * dx + dy * dy);
-  const collision = distance < a.r + b.r;
   const force = (gravitationalConstant * a.m * b.m) / (distance * distance);
   const angle = Math.atan2(dy, dx);
   const fx = force * Math.cos(angle);
   const fy = force * Math.sin(angle);
-  // const ax = fx / a.m;
-  // const ay = fy / a.m;
 
-  return { fx, fy, collision, distance };
+  return { fx, fy };
 };
 
 export const createBlankGrid = (gridResolution: number) => {
@@ -103,14 +113,13 @@ export const createBlankGrid = (gridResolution: number) => {
 
 export const getNextGrid = (state: State, parameters: Parameters) => {
   const { gridResolution } = parameters;
-  const { grid: nextGrid, cellSize } = createBlankGrid(gridResolution);
+  const { grid: nextGrid } = createBlankGrid(gridResolution);
   nextGrid.forEach((cell) => {
     state.forEach((p) => {
-      const { fx, fy, distance } = getForce(p, cell, parameters);
-      if (distance > cellSize) {
-        cell.fx += fx;
-        cell.fy += fy;
-      }
+      const distance = getDistance(p, cell);
+      const { fx, fy } = getForce(p, cell, distance, parameters);
+      cell.fx += fx;
+      cell.fy += fy;
     });
   });
 
@@ -128,11 +137,19 @@ export const getNextState = (state: State, parameters: Parameters) => {
     p.vy += ay;
     p.fx = 0;
     p.fy = 0;
+    p.x += scroll.x;
+    p.y += scroll.y;
     return p;
   });
+  setScroll({ x: scroll.x * 0.01, y: scroll.y * 0.01 });
   nextState.forEach((a) => {
     nextState.forEach((b) => {
-      const { fx, fy, collision } = getForce(a, b, parameters);
+      if (a === b || a.dead || b.dead) {
+        return;
+      }
+      const distance = getDistance(a, b);
+      const collision = distance < a.r + b.r;
+      const { fx, fy } = getForce(a, b, distance, parameters);
 
       if (collision) {
         a.vx = proportional(a, b, "vx");
@@ -179,12 +196,12 @@ export const useEvolveState = (parameters: Parameters) => {
       if (!isGridShowing) return;
       const nextGrid = getNextGrid(state, parameters);
       setGrid(nextGrid);
-    }, 200);
+    }, 1000 / 24);
     if (paused) {
       clearInterval(interval);
     }
     return () => clearInterval(interval);
-  }, [state, paused, parameters]);
+  }, [state, paused, parameters, scroll]);
 
   return {
     grid,
@@ -193,6 +210,7 @@ export const useEvolveState = (parameters: Parameters) => {
     paused,
     reset,
     resume,
+    setScroll,
     showGrid,
     state,
     stop,
